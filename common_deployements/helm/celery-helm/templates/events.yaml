@@ -1,0 +1,37 @@
+{{- if .Values.eventsConsumer.enabled }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-events-consumer
+  labels:
+    deployment: {{ .Release.Name }}-events-consumer
+spec:
+  replicas: {{ .Values.eventsConsumer.replicas }}
+  selector:
+    matchLabels:
+      deployment: {{ .Release.Name }}-events-consumer
+  template:
+    metadata:
+      labels:
+        deployment: {{ .Release.Name }}-events-consumer
+    spec:
+      serviceAccountName: {{ include "celery-helm.serviceAccountName" . }}
+      containers:
+        - name: {{ .Release.Name }}-events-consumer
+          image: {{ include "celery-helm.fullImageName" $ }}
+          env: {{ include "celery-helm.sharedEnvList" $ }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          resources:
+            requests:
+              memory: {{ .Values.eventsConsumer.memoryRequest }}
+              cpu: {{ .Values.eventsConsumer.cpuRequest }}
+            limits:
+              memory: {{ .Values.eventsConsumer.memoryLimit }}
+              cpu: {{ .Values.eventsConsumer.cpuLimit }}
+          args:
+            - -m
+            - events
+      restartPolicy: Always
+
+{{ end }}

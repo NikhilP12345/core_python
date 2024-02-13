@@ -1,0 +1,97 @@
+{{- if .Values.flower.enabled }}
+# Persistent volume claim for flower's DB
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}-flower-pvc
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  storageClassName: {{ .Values.flower.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.flower.storage }}
+
+---
+
+# Deployment for flower dashboard
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-flower
+  labels:
+    name: {{ .Release.Name }}-flower
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+       name: {{ .Release.Name }}-flower
+  template:
+    metadata:
+      labels:
+        name: {{ .Release.Name }}-flower
+    spec:
+      serviceAccountName: {{ include "celery-helm.serviceAccountName" . }}
+      containers:
+        - name: {{ .Release.Name }}-flower
+          image: {{ include "celery-helm.fullImageName" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env: {{ include "celery-helm.sharedEnvList" $ }}
+          resources:
+            requests:
+              memory: {{ .Values.flower.memoryRequest }}
+              cpu: {{ .Values.flower.cpuRequest }}
+            limits:
+              memory: {{ .Values.flower.memoryLimit }}
+              cpu: {{ .Values.flower.cpuLimit }}
+          args:
+            - -m
+            - flower
+          ports:
+            - containerPort: 5555
+          volumeMounts:
+            - name: {{ .Release.Name }}-flower-volume
+              mountPath: /volumes/persisted
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 5555
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 5555
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+      volumes:
+        - name: {{ .Release.Name }}-flower-volume
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-flower-pvc
+      restartPolicy: Always
+
+---
+# Service to expose flower dashboard to Ingress
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-flower-service
+  labels:
+    service: {{ .Release.Name }}-flower
+spec:
+  type: ClusterIP
+  selector:
+    name: {{ .Release.Name }}-flower
+  ports:
+    - port: 8080
+      targetPort: 5555
+      protocol: TCP
+
+{{ end }}

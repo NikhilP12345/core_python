@@ -1,0 +1,40 @@
+{{ range .Values.worker.queues }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}-{{ .queue }}-worker
+  labels:
+    deployment: {{ $.Release.Name }}-{{ .queue }}-worker
+spec:
+  replicas: {{ default $.Values.worker.defaultReplicas .replicas }}
+  selector:
+    matchLabels:
+      deployment: {{ $.Release.Name }}-{{ .queue }}-worker
+  template:
+    metadata:
+      labels:
+        deployment: {{ $.Release.Name }}-{{ .queue }}-worker
+    spec:
+      serviceAccountName: {{ include "celery-helm.serviceAccountName" $ }}
+      containers:
+        - name: {{ $.Release.Name }}-{{ .queue }}-worker
+          image: {{ include "celery-helm.fullImageName" $ }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env: {{ include "celery-helm.sharedEnvList" $ }}
+          resources:
+            requests:
+              memory: {{ default $.Values.worker.defaultMemory .memoryRequest }}
+              cpu: {{ default $.Values.worker.defaultCPU .cpuRequest }}
+            limits:
+              memory: {{ default $.Values.worker.defaultMemory .memoryLimit }}
+              cpu: {{ default $.Values.worker.defaultCPU .cpuLimit }}
+          args:
+            - -m
+            - worker
+            - -q
+            - {{ .queue }}
+      restartPolicy: Always
+
+---
+
+{{ end }}
