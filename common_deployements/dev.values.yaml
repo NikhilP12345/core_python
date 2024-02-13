@@ -1,0 +1,100 @@
+# The K8s namespace in which the application will be deployed in. NOTE: This is
+# only for name generation, and has no other guardrails or effects.
+k8sNamespace: dev
+
+# The deployment environment. Will also be passed as the environment variable
+# `APP_ENV` to all pods.
+deploymentEnv: dev
+
+image:
+  # Container image that hosts the celery application, with an entrypoint.sh script
+  repository: gcr.io/master-dev-253408/payment-management-helm/dev/dev
+  pullPolicy: Always
+
+  # Revision / version of the container image to use; do not use 'latest'
+  tag: null # NOTE: To be passed with the --set flag during deployment
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations:
+    iam.gke.io/gcp-service-account: dev-payment-management@master-dev-253408.iam.gserviceaccount.com
+
+# Shared environment variables for all pods
+sharedEnv:
+  DATASTORE_PROJECT: dev-payment-345109
+  GSM_PROJECT_ID: master-dev-253408
+
+
+# Configure the application server
+server:
+  enabled: true
+  replicas: 1
+  memoryRequest: "1Gi"
+  cpuRequest: "500m"
+  memoryLimit: "1Gi"
+  cpuLimit: "500m"
+  port: 8080
+  healthCheck: /healthcheck
+
+
+# Configure celery beat
+beat:
+  enabled: false
+  memoryRequest: "1Gi"
+  cpuRequest: "500m"
+  memoryLimit: "1Gi"
+  cpuLimit: "500m"
+  storage: "1Gi"
+  storageClassName: standard-rwo
+
+
+# Configure the flower dashboard
+flower:
+  enabled: true
+  memoryRequest: "1Gi"
+  cpuRequest: "500m"
+  memoryLimit: "1Gi"
+  cpuLimit: "500m"
+  storage: "1Gi"
+  storageClassName: standard-rwo
+
+
+  # Configure workers
+worker:
+
+  # Default number of workers for queues
+  defaultReplicas: 1
+
+  # Default mempory allocation for each worker
+  defaultMemory: "1Gi"
+
+  # Default CPU allocation for each worker
+  defaultCPU: "500m"
+
+  # Queue-specific configuration
+  ############################################################################
+  # - queue: celery         # Name of the queue
+  #   replicas: 1           # Number of replicas for the queue, optional
+  #   memoryRequest: "1Gi"  # Amount of memory to request, optional
+  #   cpuRequest: "500m"    # Amount of CPU to request, optional
+  #   memoryLimit: "1Gi"    # Amount of memory to limit, optional
+  #   cpuLimit: "500m"      # Amount of CPU to limit, optional
+  ############################################################################
+  queues:
+    - queue: celery
+      memoryRequest: "1Gi"
+      cpuRequest: "500m"
+      memoryLimit: "1Gi"
+      cpuLimit: "500m"
+
+
+# Events consumer details
+eventsConsumer:
+  enabled: true
+  replicas: 1
+  memoryRequest: "1Gi"
+  cpuRequest: "500m"
+  memoryLimit: "1Gi"
+  cpuLimit: "500m"

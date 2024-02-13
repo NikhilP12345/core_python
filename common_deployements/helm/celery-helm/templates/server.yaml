@@ -1,0 +1,71 @@
+{{- if .Values.server.enabled }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+  labels:
+    app: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+       app: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+    spec:
+      serviceAccountName: {{ include "celery-helm.serviceAccountName" . }}
+      containers:
+        - name: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+          image: {{ include "celery-helm.fullImageName" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env: {{ include "celery-helm.sharedEnvList" $ }}
+          resources:
+            requests:
+              memory: {{ .Values.server.memoryRequest }}
+              cpu: {{ .Values.server.cpuRequest }}
+            limits:
+              memory: {{ .Values.server.memoryLimit }}
+              cpu: {{ .Values.server.cpuLimit }}
+          args:
+            - -m
+            - server
+          ports:
+            - containerPort: {{ .Values.server.port }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.server.healthCheck }}
+              port: {{ .Values.server.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.server.healthCheck }}
+              port: {{ .Values.server.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+      restartPolicy: Always
+
+---
+# Service to expose web application to Ingress
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+  labels:
+    app: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-{{ .Values.k8sNamespace }}-{{ .Values.deploymentEnv }}
+  ports:
+    - port: 8080
+      targetPort: {{ .Values.server.port }}
+      protocol: TCP
+
+{{ end }}
