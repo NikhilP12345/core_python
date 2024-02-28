@@ -18,13 +18,13 @@ class HelloHandler(Resource):
             a = self.sumHelper()
             task_payload = {'x': a[0], 'y': a[1]}
 
-            trace_context = {}
-            propagate.inject(trace_context)
+            # trace_context = {}
+            # propagate.inject(trace_context)
 
             full_payload = {
                 'task_payload': task_payload,
-                'trace_context': trace_context,
-                'name': "mihir"
+                # 'trace_context': trace_context,
+                'name': "abc"
             }
             logger.info(f"Sending payload to queue -> {full_payload}")
             printHello.delay(full_payload)
