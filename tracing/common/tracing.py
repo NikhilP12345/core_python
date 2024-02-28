@@ -3,6 +3,7 @@ from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.urllib import URLLibInstrumentor
+from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -34,6 +35,7 @@ def setup_tracing(service_name="my_service", sampling_rate=1):
     RequestsInstrumentor().instrument()
     URLLibInstrumentor().instrument()
     GrpcInstrumentorServer().instrument()
+    CeleryInstrumentor().instrument()
 
 def add_trace_context_to_loguru():
     def enrich_with_trace_info(record):
