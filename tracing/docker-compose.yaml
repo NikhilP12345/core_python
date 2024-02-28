@@ -1,0 +1,70 @@
+version: '3'
+services:
+  tempo:
+    image: grafana/tempo:latest
+    volumes:
+      - ./tempo-local.yaml:/etc/tempo.yaml
+    command: -config.file=/etc/tempo.yaml
+    ports:
+      - "3100:3100" # Query frontend
+      - "4317:4317" # gRPC OTLP receiver
+      - "4318:4318" # HTTP OTLP receiver
+      - "55680:55680" # OpenTelemetry receiver (deprecated port)
+    depends_on:
+      - minio
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - tempo
+      - loki
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+
+  minio:
+    image: minio/minio
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+    environment:
+      MINIO_ACCESS_KEY: tempo
+      MINIO_SECRET_KEY: supersecret
+    command: server /data
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3101:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml  # Make sure this path matches the expected config file location within the container
+      - loki-data:/tmp/loki
+      - /tmp/loki/chunks:/tmp/loki/chunks
+      - /tmp/loki/cache:/tmp/loki/cache
+      - /tmp/loki/boltdb-shipper:/tmp/loki/boltdb-shipper
+      - /tmp/loki/index:/tmp/loki/index
+      - wal:/wal
+    command: -config.file=/etc/loki/config.yaml
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - /var/log:/var/log  # Ensure this path matches the log files you want to collect
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+volumes:
+  minio-data:
+  loki-data:
+  wal:
