@@ -7,7 +7,7 @@ from decorators import trace_function
 
 
 class HelloHandler(Resource):
-    @trace_function("sumHelper")
+    # @trace_function("sumHelper")
     def sumHelper(self):
         logger.info("In sumHelper")
         return (4, 2)
