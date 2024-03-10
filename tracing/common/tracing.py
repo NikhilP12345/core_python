@@ -10,16 +10,19 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio
 from opentelemetry.trace import SpanContext, INVALID_SPAN_ID, INVALID_TRACE_ID
 import requests
+from opentelemetry.propagate import inject
 import datetime
 import json
 import time
 from opentelemetry import trace, propagate
 from loguru import logger
 
+def before_request_hook(span, request_to_be_instrumented):
+    # Inject the current trace context into the request headers
+    inject(request_to_be_instrumented.headers)
 
 
-
-def setup_tracing(service_name="my_service", sampling_rate=1):
+def setup_tracing(app = None, service_name="my_service", sampling_rate=1):
     print(f"In setup_tracing")
     sampler = ParentBasedTraceIdRatio(sampling_rate)
     resource = Resource.create(attributes={SERVICE_NAME: service_name})
@@ -31,8 +34,13 @@ def setup_tracing(service_name="my_service", sampling_rate=1):
     trace.get_tracer_provider().add_span_processor(span_processor)
     
     # Instrumentation
-    FlaskInstrumentor().instrument()
-    RequestsInstrumentor().instrument()
+    if(app):
+        FlaskInstrumentor().instrument_app(app)
+        RequestsInstrumentor().instrument(request_hook=before_request_hook)
+    else:
+        FlaskInstrumentor().instrument()
+        RequestsInstrumentor().instrument()
+
     URLLibInstrumentor().instrument()
     GrpcInstrumentorServer().instrument()
     CeleryInstrumentor().instrument()
