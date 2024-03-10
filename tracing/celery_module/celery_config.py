@@ -1,7 +1,8 @@
 
 print("Sdg")
 include = [
-    'celery_module.tasks'
+    'celery_module.tasks',
+    'celery_module.new_task'
 ] 
 # 'celery_analytics.modules.ifsc_cache.ifsc_cache',
 result_expires = 3600
@@ -10,4 +11,5 @@ task_acks_late = True
 task_reject_on_worker_lost = True
 task_routes = {
     'celery_module.tasks.*': {'queue': 'celery'},
+    'celery_module.new_task.*': {'queue': 'sum'},
 }

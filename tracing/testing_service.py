@@ -4,16 +4,16 @@ from common.exception import CoreApi
 
 from common.logger import *
 from common.tracing import *
-from views.hello import HelloHandler
+from views.test import TestHandler
 from opentelemetry import trace
 
 
 # Initialize your Flask app
 app = Flask(__name__)
+
 # Setup tracing and logging
 setup_tracing(app, service_name="example_service", sampling_rate = 1)
 add_trace_context_to_loguru()
-
 tracer = trace.get_tracer(__name__)
 
 @app.before_request
@@ -34,11 +34,12 @@ def end_span(response):
         current_span.end()
     return response
 
+
 api = CoreApi(app, catch_all_404s=True)
 
 
-HelloHandler.init(api)
+TestHandler.init(api)
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=8081)
