@@ -2,7 +2,7 @@ from flask_restful import Resource, abort, request
 from celery_module.tasks import printHello
 from opentelemetry import trace, propagate
 from loguru import logger
-from decorators import trace_function
+# from decorators import trace_function
 import json
 import requests
 
@@ -12,7 +12,7 @@ class HelloHandler(Resource):
         logger.info("In sumHelper")
         return (4, 2)
 
-    @trace_function("get_hello")
+    # @trace_function("get_hello")
     def get(self):
         try:
             a = self.sumHelper()

@@ -1,7 +1,7 @@
 from flask_restful import Resource, abort, request
 from opentelemetry import trace, propagate
 from loguru import logger
-from decorators import trace_function
+# from decorators import trace_function
 import json
 
 def json_parse(obj_str=None):
@@ -16,7 +16,7 @@ def json_parse(obj_str=None):
 class TestHandler(Resource):
 
 
-    @trace_function("get_test")
+    # @trace_function("get_test")
     def post(self):
         try:
             a = json_parse(request.data)
