@@ -6,7 +6,7 @@ from opentelemetry.instrumentation.urllib import URLLibInstrumentor
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio
 from opentelemetry.trace import SpanContext, INVALID_SPAN_ID, INVALID_TRACE_ID
 import requests
@@ -16,7 +16,6 @@ import json
 import time
 from opentelemetry import trace, propagate
 from loguru import logger
-# from opentelemetry.exporter.console import ConsoleSpanExporter
 
 def before_request_hook(span, request_to_be_instrumented):
     # Inject the current trace context into the request headers
@@ -30,8 +29,8 @@ def setup_tracing(app = None, service_name="my_service", sampling_rate=1):
     trace_provider = TracerProvider(sampler=sampler, resource=resource)
     trace.set_tracer_provider(trace_provider)
     
-    console_exporter = ConsoleSpanExporter()
-    span_processor = SimpleSpanProcessor(console_exporter)
+    otlp_exporter = OTLPSpanExporter(endpoint="http://localhost:4318/v1/traces")  # Configure for Grafana Tempo
+    span_processor = BatchSpanProcessor(otlp_exporter)
     trace.get_tracer_provider().add_span_processor(span_processor)
     
     # Instrumentation
